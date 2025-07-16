@@ -10,7 +10,7 @@ RUN apk update && apk add git
 WORKDIR ${BUILD_HOME}
 
 # Clone repository
-RUN git clone -b ${DAMAP_BE_VERSION} --single-branch --depth 1 https://github.com/tuwien-csd/damap-backend.git .
+RUN git clone -b ${DAMAP_BE_VERSION} --single-branch --depth 1 https://github.com/damap-org/damap-backend.git .
 
 RUN mkdir -p ${BUILD_HOME}/.m2/repository && chown -R 1000:0 ${BUILD_HOME}
 USER 1000
