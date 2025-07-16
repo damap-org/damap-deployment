@@ -64,7 +64,7 @@ services:
       retries: 5
 
   damap-frontend:
-    image: ghcr.io/tuwien-csd/damap-frontend:${DAMAP_FE_VERSION:-latest}
+    image: ghcr.io/damap-org/damap-frontend:${DAMAP_FE_VERSION:-latest}
     container_name: "damap-frontend"
     restart: "unless-stopped"
     depends_on:
@@ -159,7 +159,7 @@ services:
 
   # alternate frontend aimed to test specific versions (tags)
   damap-frontend-alt:
-    image: ghcr.io/tuwien-csd/damap-frontend:${DAMAP_FE_ALT_VERSION:-latest}
+    image: ghcr.io/damap-org/damap-frontend:${DAMAP_FE_ALT_VERSION:-latest}
     container_name: "damap-frontend-alt"
     restart: "unless-stopped"
     depends_on:
