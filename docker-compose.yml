@@ -42,7 +42,8 @@ services:
     build:
       context: ./docker/damap-be
       args:
-        DAMAP_BE_VERSION: ${DAMAP_BE_VERSION:-next}
+        DAMAP_BE_VERSION: v4.6.0
+    image: damap-org/damap-deployment-backend:v4.6.0
     container_name: "damap-backend"
     restart: "unless-stopped"
     depends_on:
@@ -64,7 +65,7 @@ services:
       retries: 5
 
   damap-frontend:
-    image: ghcr.io/damap-org/damap-frontend:${DAMAP_FE_VERSION:-latest}
+    image: ghcr.io/damap-org/damap-frontend:4.6.0
     container_name: "damap-frontend"
     restart: "unless-stopped"
     depends_on:
@@ -136,6 +137,7 @@ services:
       context: ./docker/damap-be
       args:
         DAMAP_BE_VERSION: ${DAMAP_BE_ALT_VERSION:-next}
+    image: damap-org/damap-deployment-backend-alt:${DAMAP_BE_ALT_VERSION:-next}
     container_name: "damap-backend-alt"
     restart: "unless-stopped"
     depends_on:
