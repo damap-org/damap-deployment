@@ -3,40 +3,56 @@
 damap:
   env: ${DAMAP_BE_ENV} # override in your custom project with PROD for production deployment
   origins: https://${DAMAP_BE_HOSTNAME} # https://your.frontend.com,https://*.yourdomain.com
+
   auth:
     backend:
-      url: http://keycloak:8080/auth/realms/damap # https://your.authentication.server
-      client: "damap-be" # your-backend-authentication-client-id
+      url: http://keycloak:8080/auth/realms/damap
+      client: "damap-be"
     frontend:
       url: https://${DAMAP_BE_HOSTNAME}/auth/realms/damap
-      client: "damap" # your-frontend-authentication-client-id
+      client: "damap"
     scope: "openid profile email offline_access microprofile-jwt roles personID" # your-backend-authentication-scope, including your variable for your user IDs
-    user: "personID" # the variable name for your user IDs
+    user: "personID"
+
   datasource:
-    url: jdbc:postgresql://postgres:5432/${DAMAP_BE_DB_NAME}
-    username: ${DAMAP_BE_DB_USER}
-    password: ${DAMAP_BE_DB_PASSWORD}
-    db-kind: postgresql
+    url: ${DAMAP_DATASOURCE_URL:jdbc:postgresql://postgres:5432/${DAMAP_BE_DB_NAME}}
+    db-kind: ${DAMAP_DATABASE_DB_KIND:postgresql}
+    driver: ${DAMAP_DATASOURCE_DRIVER:org.postgresql.Driver}
+    username: ${DAMAP_BE_DB_USER:damap}
+    password: ${DAMAP_BE_DB_PASSWORD:pw4damap}
+    dialect: ${DAMAP_DATASOURCE_DIALECT:org.hibernate.dialect.PostgreSQLDialect}
+
   repositories:
     # Zenodo, Open Science Framework, DRYAD, Mendeley Data
     recommendation:
       ["r3d100010468", "r3d100011137", "r3d100000044", "r3d100011868"]
-  projects-url: http://api-mock:80
-  persons-url: http://api-mock:80
+
   fits-url: http://fits-service:8080/fits
   gotenberg-url: http://gotenberg:3000
-  person-services:
-    - display-text: "University"
-      query-value: "UNIVERSITY"
-      class-name: "org.damap.base.rest.persons.MockUniversityPersonServiceImpl"
-    - display-text: "ORCID"
-      query-value: "ORCID"
-      class-name: "org.damap.base.rest.persons.orcid.ORCIDPersonServiceImpl"
+
   fields:
     ethical-report-enabled: true
 
+  invenio:
+    disabled: ${DAMAP_BE_INVENIO_DISABLED:-true}
+    shared-secret: ${DAMAP_BE_INVENIO_SHARED_SECRET:-thisIsAVerySecretKeyOfAtLeast32Chars}
+
+  mock-endpoint-url: http://api-mock:80
+  projects-service: default
+
+  # Set up person lookups here:
+  person-services:
+    - display-text: "University"
+      query-value: "UNIVERSITY"
+      class-name: 'org.damap.base.integration.mock.MockUniversityPersonServiceImpl'
+
+    - display-text: "ORCID"
+      query-value: "ORCID"
+      class-name: "org.damap.base.integration.orcid.ORCIDPersonServiceImpl"
+
 invenio:
-  shared-secret: "secret stuff or token"
+  disabled: ${damap.invenio.disabled}
+  shared-secret: ${damap.invenio.shared-secret}
 
 # general config settings
 quarkus:
@@ -59,11 +75,14 @@ quarkus:
   datasource:
     jdbc:
       url: ${damap.datasource.url}
+      driver: ${damap.datasource.driver}
+
     db-kind: ${damap.datasource.db-kind}
     username: ${damap.datasource.username}
     password: ${damap.datasource.password}
 
   hibernate-orm:
+    dialect: ${damap.datasource.dialect}
     database:
       generation: none
     sql-load-script: no-file
@@ -87,8 +106,8 @@ quarkus:
     oauth-client-id: ${damap.auth.frontend.client}
 
 rest:
-  projects/mp-rest/url: ${damap.projects-url}
-  persons/mp-rest/url: ${damap.persons-url}
+  mock-projects/mp-rest/url: ${damap.mock-endpoint-url}
+  mock-persons/mp-rest/url: ${damap.mock-endpoint-url}
   fits/mp-rest/url: ${damap.fits-url}
   gotenberg/mp-rest/url: ${damap.gotenberg-url}
   r3data:
@@ -106,26 +125,12 @@ rest:
         url: http://localhost:8087/realms/damap
     datasource:
       url: jdbc:postgresql://localhost:8088/damap
+      db-kind: postgresql
       username: damap
       password: pw4damap
-    projects-url: http://localhost:8091
-    persons-url: http://localhost:8091
+    mock-endpoint-url: http://localhost:8091
     fits-url: http://localhost:8089/fits
     gotenberg-url: http://localhost:3000
-
-"%oracle":
-  quarkus:
-    datasource:
-      db-kind: oracle
-    hibernate-orm:
-      dialect: org.hibernate.dialect.OraclecDialect
-
-"%postgres":
-  quarkus:
-    datasource:
-      db-kind: postgresql
-    hibernate-orm:
-      dialect: org.hibernate.dialect.PostgreSQLDialect
 
 "%test":
   damap:
@@ -135,6 +140,7 @@ rest:
     datasource:
       db-kind: h2
       jdbc:
+        driver: org.h2.Driver
         url: jdbc:h2:mem:test
     oidc:
       enabled: false
