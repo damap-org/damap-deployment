@@ -1,4 +1,4 @@
-# HTTP server for the 'next' branch instance
+# HTTP server (redirects to HTTPS)
 server {
     listen 80;
     listen [::]:80; # IPv6
@@ -8,12 +8,13 @@ server {
     location / {
         return 301 https://$host$request_uri;
     }
+
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
     }
 }
 
-# HTTPS server for the 'next' branch instance
+# HTTPS server
 server {
     listen 443 ssl;
     listen [::]:443 ssl; # IPv6
@@ -29,10 +30,12 @@ server {
     location / {
         proxy_pass http://damap-frontend:8080;
     }
+
     # Proxy to the API
     location /api/ {
         proxy_pass http://damap-backend:8080;
     }
+
     # Proxy to keycloak
     location /auth {
         rewrite /auth/(.*) /auth/$1 break;
@@ -45,14 +48,17 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
+
     # Proxy to OpenAPI documentation
     location /q/openapi {
         proxy_pass http://damap-backend:8080;
     }
+
     # Proxy to Swagger UI
     location /q/swagger-ui {
         proxy_pass http://damap-backend:8080;
     }
+
     # Proxy to the server statistics
     location /stats {
         # Serve goaccess html file
@@ -61,47 +67,5 @@ server {
         # Secure route
         auth_basic "Restricted Content";
         auth_basic_user_file /etc/nginx/.htpasswd;
-    }
-}
-
-# HTTP server for the alternate deployment instance (Redirect to HTTPS)
-server {
-    listen 80;
-    listen [::]:80; # IPv6
-    server_name test-${NGINX_HOSTNAME};
-
-    # Redirect to HTTPS
-    location / {
-        return 301 https://$host$request_uri;
-    }
-}
-
-# HTTPS server for the alternate deployment instance
-server {
-    listen 443 ssl;
-    listen [::]:443 ssl; # IPv6
-    server_name test-${NGINX_HOSTNAME};
-
-    ssl_certificate ${SSL_TEST_CERTIFICATE_PATH};
-    ssl_certificate_key ${SSL_TEST_KEY_PATH};
-
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-
-    # Proxy to the test application server
-    location / {
-        proxy_pass http://damap-frontend-alt:8080;
-    }
-    # Proxy to the API
-    location /api/ {
-        proxy_pass http://damap-backend-alt:8080;
-    }
-    # Proxy to OpenAPI documentation
-    location /q/openapi {
-        proxy_pass http://damap-backend-alt:8080;
-    }
-    # Proxy to Swagger UI
-    location /q/swagger-ui {
-        proxy_pass http://damap-backend-alt:8080;
     }
 }
