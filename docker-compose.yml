@@ -12,8 +12,6 @@ services:
       - damap-frontend
       - damap-backend
       - keycloak
-      - damap-frontend-alt
-      - damap-backend-alt
     environment:
       NGINX_HOSTNAME: ${NGINX_HOSTNAME:-localhost}
       HTTP_AUTH_USER: ${HTTP_AUTH_USER:-admin}
@@ -22,8 +20,6 @@ services:
       # When deploying to a live domain, use the Let's Encrypt volume path. See `example.env`.
       SSL_CERTIFICATE_PATH: ${SSL_CERTIFICATE_PATH:-/etc/nginx/ssl/test.crt}
       SSL_KEY_PATH: ${SSL_KEY_PATH:-/etc/nginx/ssl/test.key}
-      SSL_TEST_CERTIFICATE_PATH: ${SSL_TEST_CERTIFICATE_PATH:-/etc/nginx/ssl/test.crt}
-      SSL_TEST_KEY_PATH: ${SSL_TEST_KEY_PATH:-/etc/nginx/ssl/test.key}
     ports:
       - "80:80"
       - "443:443"
@@ -80,7 +76,7 @@ services:
     restart: "unless-stopped"
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-postgres}
-      POSTGRES_EXTRA_DBS: ${POSTGRES_EXTRA_DBS:-damap,damap_alt,keycloak}
+      POSTGRES_EXTRA_DBS: ${POSTGRES_EXTRA_DBS:-damap,keycloak}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
@@ -130,42 +126,6 @@ services:
       interval: 5s
       timeout: 2s
       retries: 15
-
-  # Alternate backend aimed to test specific versions (tags)
-  damap-backend-alt:
-    build:
-      context: ./docker/damap-be
-      args:
-        DAMAP_BE_VERSION: ${DAMAP_BE_ALT_VERSION:-next}
-    image: damap-org/damap-deployment-backend-alt:${DAMAP_BE_ALT_VERSION:-next}
-    container_name: "damap-backend-alt"
-    restart: "unless-stopped"
-    depends_on:
-      - postgres
-      - keycloak
-      - api-mock
-      - fits-service
-    environment:
-      # Must match one of the values in POSTGRES_MULTIPLE_DATABASES
-      DAMAP_BE_DB_NAME: ${DAMAP_BE_ALT_DB_NAME:-damap_alt}
-      DAMAP_BE_DB_PASSWORD: ${DAMAP_BE_ALT_DB_PASSWORD:-damap_alt}
-      DAMAP_BE_DB_USER: ${DAMAP_BE_ALT_DB_USER:-damap_alt}
-      DAMAP_BE_ENV: ${DAMAP_BE_ALT_ENV:-DEV}
-      # Matches 'test-<hostname>' convention in nginx default.conf.template
-      DAMAP_BE_HOSTNAME: test-${DAMAP_BE_HOSTNAME:-localhost}
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8080/q/health/live" ]
-      interval: 30s
-      timeout: 15s
-      retries: 5
-
-  # alternate frontend aimed to test specific versions (tags)
-  damap-frontend-alt:
-    image: ghcr.io/damap-org/damap-frontend:${DAMAP_FE_ALT_VERSION:-latest}
-    container_name: "damap-frontend-alt"
-    restart: "unless-stopped"
-    depends_on:
-      - damap-backend-alt
 
   api-mock:
     image: clue/json-server
