@@ -126,6 +126,10 @@ quarkus:
     always-include: true # set to false if swagger-ui should only be available in dev mode
     oauth-client-id: ${damap.auth.frontend.client}
 
+  rest-client:
+    elsevier-pure:
+      url: ${damap.elsevier-pure-endpoint-url}
+
 rest:
   mock-projects/mp-rest/url: ${damap.mock-endpoint-url}
   mock-persons/mp-rest/url: ${damap.mock-endpoint-url}
