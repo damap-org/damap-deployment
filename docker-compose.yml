@@ -48,12 +48,77 @@ services:
       - api-mock
       - fits-service
     environment:
-      # the below has to match one value of specified POSTGRES_MULTIPLE_DATABASES
-      DAMAP_BE_DB_NAME: ${DAMAP_BE_DB_NAME:-damap}
-      DAMAP_BE_DB_PASSWORD: ${DAMAP_BE_DB_PASSWORD:-damap}
-      DAMAP_BE_DB_USER: ${DAMAP_BE_DB_USER:-damap}
-      DAMAP_BE_ENV: ${DAMAP_BE_ENV:-DEV}
-      DAMAP_BE_HOSTNAME: ${DAMAP_BE_HOSTNAME:-localhost}
+      # --- Logging settings --- #
+      QUARKUS_LOG_CATEGORY__IO_SMALLRYE_JWT_AUTH__LEVEL: DEBUG
+      QUARKUS_LOG_CATEGORY__IO_SMALLRYE_JWT__LEVEL: DEBUG
+      QUARKUS_LOG_CATEGORY__IO_QUARKUS__LEVEL: DEBUG
+      QUARKUS_LOG_CATEGORY__ORG_ECLIPSE_MICROPROFILE__LEVEL: DEBUG
+      QUARKUS_LOG_CATEGORY__ORG_JBOSS_RESTEASY_REACTIVE__LEVEL: DEBUG
+
+      # --- General settings --- #
+      DAMAP_ENV: ${DAMAP_ENV:-DEV}
+      DAMAP_TENANT_AWARE_TITLE: ${DAMAP_TENANT_AWARE_TITLE:-DAMAP Tool}
+      QUARKUS_HTTP_CORS_ORIGINS: "${DAMAP_QUARKUS_HTTP_CORS_ORIGINS:-https://localhost}"
+      QUARKUS_PROFILE: ${DAMAP_QUARKUS_PROFILE:-}
+
+      # --- Database settings --- #
+      # Optional database configuration values, can be overridden by environment variables.
+      # This is useful in case the database host/port/name are different from the defaults.
+      # Prefixed with DAMAP_ (not Quarkus-specific), used to build the full JDBC URL.
+      # NOTE: the database name has to match one of the values in POSTGRES_EXTRA_DBS in the postgres service below.
+      DAMAP_DB_HOST: ${DAMAP_DB_HOST:-postgres}
+      DAMAP_DB_NAME: ${DAMAP_DB_NAME:-damap}
+      DAMAP_DB_PORT: ${DAMAP_DB_PORT:-}
+
+      # --- Required database configuration values, must be set in the environment or .env file. ---
+      QUARKUS_DATASOURCE_DB_KIND: ${DAMAP_DB_KIND:-postgresql}
+      QUARKUS_DATASOURCE_PASSWORD: "${DAMAP_DB_PASSWORD:-damap}"
+      QUARKUS_DATASOURCE_USERNAME: "${DAMAP_DB_USERNAME:-damap}"
+
+      # --- OIDC / Auth settings --- #
+      DAMAP_AUTH_ADMIN_ROLE_NAME: ${DAMAP_AUTH_ADMIN_ROLE_NAME:-Damap Admin}
+      DAMAP_AUTH_AFFILIATIONS_CLAIM: ${DAMAP_AUTH_AFFILIATIONS_CLAIM:-affiliation}
+      DAMAP_AUTH_EMAIL_CLAIM: ${DAMAP_AUTH_EMAIL_CLAIM:-email}
+      DAMAP_AUTH_FAMILY_NAME_CLAIM: ${DAMAP_AUTH_FAMILY_NAME_CLAIM:-family_name}
+      DAMAP_AUTH_GIVEN_NAME_CLAIM: ${DAMAP_AUTH_GIVEN_NAME_CLAIM:-given_name}
+      DAMAP_AUTH_NAME_CLAIM: ${DAMAP_AUTH_NAME_CLAIM:-name}
+      DAMAP_AUTH_SCOPE: ${DAMAP_AUTH_SCOPE:-openid profile email offline_access microprofile-jwt roles personID}
+      DAMAP_AUTH_USER_ID_CLAIM: ${DAMAP_AUTH_USER_ID_CLAIM:-personID}
+      DAMAP_AUTH_USER_ROLES_CLAIM_PATH: ${DAMAP_AUTH_USER_ROLES_CLAIM_PATH:-realm_access/roles}
+      QUARKUS_OIDC_AUTH_SERVER_URL: "${DAMAP_QUARKUS_OIDC_AUTH_SERVER_URL:-http://keycloak:8080/auth/realms/damap}"
+      QUARKUS_OIDC_CLIENT_ID: "${DAMAP_QUARKUS_OIDC_CLIENT_ID:-damap}"
+      QUARKUS_OIDC_TOKEN_ISSUER: "${DAMAP_QUARKUS_OIDC_TOKEN_ISSUER:-https://localhost/auth/realms/damap}"
+
+      # --- Settings for Person and Project services that DAMAP will connect to --- #
+      # TODO: These should ideally be refactored to be more flexible and extensible,
+      # e.g. by allowing to specify an arbitrary number of person services via a JSON array or similar.
+      DAMAP_TENANT_AWARE_PERSON_SERVICES_0__DISPLAY_TEXT: ${DAMAP_TENANT_AWARE_PERSON_SERVICES_0__DISPLAY_TEXT:-Pure}
+      DAMAP_TENANT_AWARE_PERSON_SERVICES_0__QUERY_VALUE: ${DAMAP_TENANT_AWARE_PERSON_SERVICES_0__QUERY_VALUE:-PURE}
+      DAMAP_TENANT_AWARE_PERSON_SERVICES_0__CLASS_NAME: ${DAMAP_TENANT_AWARE_PERSON_SERVICES_0__CLASS_NAME:-org.damap.base.integration.pure.PurePersonService}
+      DAMAP_TENANT_AWARE_PERSON_SERVICES_1__DISPLAY_TEXT: ${DAMAP_TENANT_AWARE_PERSON_SERVICES_1__DISPLAY_TEXT:-ORCID}
+      DAMAP_TENANT_AWARE_PERSON_SERVICES_1__QUERY_VALUE: ${DAMAP_TENANT_AWARE_PERSON_SERVICES_1__QUERY_VALUE:-ORCID}
+      DAMAP_TENANT_AWARE_PERSON_SERVICES_1__CLASS_NAME: ${DAMAP_TENANT_AWARE_PERSON_SERVICES_1__CLASS_NAME:-org.damap.base.integration.orcid.ORCIDPersonServiceImpl}
+      DAMAP_TENANT_AWARE_PROJECT_SERVICE: ${DAMAP_TENANT_AWARE_PROJECT_SERVICE:-default}
+
+      # --- Settings for REST services DAMAP connects to --- #
+      DAMAP_REST_GOTENBERG_MP_REST_URL: ${DAMAP_REST_GOTENBERG_MP_REST_URL:-http://gotenberg:3000}
+
+      # --- Fields settings --- #
+      DAMAP_TENANT_AWARE_FIELDS_ETHICAL_REPORT_ENABLED: ${DAMAP_TENANT_AWARE_FIELDS_ETHICAL_REPORT_ENABLED:-true}
+
+      # --- DAMAP PURE integration settings --- #
+      DAMAP_TENANT_AWARE_ELSEVIER_PURE_API_KEY: ${DAMAP_TENANT_AWARE_ELSEVIER_PURE_API_KEY:-""}
+      DAMAP_TENANT_AWARE_ELSEVIER_PURE_BACKEND: ${DAMAP_TENANT_AWARE_ELSEVIER_PURE_BACKEND:-file}
+      DAMAP_TENANT_AWARE_ELSEVIER_PURE_CONTRIBUTOR_ROLE_CLASSIFICATIONS_0__CONTRIBUTOR_ROLE: ${DAMAP_TENANT_AWARE_ELSEVIER_PURE_CONTRIBUTOR_ROLE_CLASSIFICATIONS_0__CONTRIBUTOR_ROLE:-PROJECT_MEMBER}
+      DAMAP_TENANT_AWARE_ELSEVIER_PURE_CONTRIBUTOR_ROLE_CLASSIFICATIONS_0__PURE_ROLE_URI: ${DAMAP_TENANT_AWARE_ELSEVIER_PURE_CONTRIBUTOR_ROLE_CLASSIFICATIONS_0__PURE_ROLE_URI:-/dk/atira/pure/member}
+      DAMAP_TENANT_AWARE_ELSEVIER_PURE_DESCRIPTION_CLASSIFICATION: ${DAMAP_TENANT_AWARE_ELSEVIER_PURE_DESCRIPTION_CLASSIFICATION:-/dk/atira/pure/projectdescription}
+      DAMAP_TENANT_AWARE_ELSEVIER_PURE_ENDPOINT_URL: ${DAMAP_TENANT_AWARE_ELSEVIER_PURE_ENDPOINT_URL:-""}
+      DAMAP_TENANT_AWARE_ELSEVIER_PURE_PERSONS_FILE: file:////opt/damap/config/pure-persons-data.json
+      DAMAP_TENANT_AWARE_ELSEVIER_PURE_PROJECT_LEAD_ROLE_CLASSIFICATION: ${DAMAP_TENANT_AWARE_ELSEVIER_PURE_PROJECT_LEAD_ROLE_CLASSIFICATION:-/dk/atira/pure/projectlead}
+      DAMAP_TENANT_AWARE_ELSEVIER_PURE_PROJECTS_FILE: file:////opt/damap/config/pure-projects-data.json
+    volumes:
+      - ${DAMAP_PURE_PERSONS_FILE:-./docker/damap-be/pure/persons.json}:/opt/damap/config/pure-persons-data.json:ro
+      - ${DAMAP_PURE_PROJECTS_FILE:-./docker/damap-be/pure/projects.json}:/opt/damap/config/pure-projects-data.json:ro
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080/q/health/live" ]
       interval: 30s
@@ -99,7 +164,7 @@ services:
       KC_DB: postgres
       KC_DB_SCHEMA: public
       KC_DB_PASSWORD: ${KC_DB_PASSWORD:-keycloak}
-      # Must match one of the values in POSTGRES_MULTIPLE_DATABASES
+      # Must match one of the values in POSTGRES_EXTRA_DBS
       KC_DB_URL_DATABASE: ${KC_DB_URL_DATABASE:-keycloak}
       KC_DB_URL_HOST: postgres
       KC_DB_USERNAME: ${KC_DB_USERNAME:-keycloak}

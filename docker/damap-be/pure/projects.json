@@ -1,0 +1,207 @@
+{
+  "count": 2,
+  "pageInformation": {
+    "offset": 0,
+    "size": 50
+  },
+  "items": [
+    {
+      "typeDiscriminator": "AwardManagementProject",
+      "uuid": "ae91d2be-99a4-4d12-b172-a13ae282d808",
+      "acronym": "Test1",
+      "participants": [
+        {
+          "typeDiscriminator": "InternalParticipantAssociation",
+          "pureId": 1234,
+          "name": {
+            "firstName": "Alice",
+            "lastName": "Faketon"
+          },
+          "role": {
+            "uri": "/dk/atira/pure/upmproject/roles/upmproject/pi",
+            "term": {
+              "de_AT": "Projektleitung",
+              "de_DE": "Projektleitung",
+              "en_GB": "Principal Investigator"
+            }
+          },
+          "person": {
+            "systemName": "Person",
+            "uuid": 123456
+          },
+          "organizations": [
+            {
+              "systemName": "Organization",
+              "uuid": "777530ec-d1a5-49d3-bf65-b4c3a683ddcc"
+            }
+          ]
+        }
+      ],
+      "descriptions": [
+        {
+          "pureId": 111111,
+          "value": {
+            "en_GB": "This is a test project 1"
+          },
+          "type": {
+            "uri": "/dk/atira/pure/upmproject/descriptions/projectdescription",
+            "term": {
+              "de_DE": "Beschreibung",
+              "en_GB": "Description"
+            }
+          }
+        },
+        {
+          "pureId": 987654321,
+          "type": {
+            "uri": "/dk/atira/pure/upmproject/descriptions/keyfindings",
+            "term": {
+              "de_DE": "Wichtigste Erkenntnisse",
+              "en_GB": "Key findings"
+            }
+          }
+        }
+      ],
+      "period": {
+        "startDate": "2022-01-01",
+        "endDate": "2023-01-01"
+      },
+      "title": {
+        "en_GB": "Test Project 1"
+      },
+      "systemName": "Project"
+    },
+    {
+      "typeDiscriminator": "AwardManagementProject",
+      "uuid": "b994f445-f742-4667-943a-ce6a02e9c7cb",
+      "acronym": "Test2",
+      "participants": [
+        {
+          "typeDiscriminator": "InternalParticipantAssociation",
+          "pureId": 5678,
+          "name": {
+            "firstName": "Alice",
+            "lastName": "Faketon"
+          },
+          "role": {
+            "uri": "/dk/atira/pure/upmproject/roles/upmproject/pi",
+            "term": {
+              "de_AT": "Projektleitung",
+              "de_DE": "Projektleitung",
+              "en_GB": "Principal Investigator"
+            }
+          },
+          "person": {
+            "systemName": "Person",
+            "uuid": 123456
+          },
+          "organizations": [
+            {
+              "systemName": "Organization",
+              "uuid": "777530ec-d1a5-49d3-bf65-b4c3a683ddcc"
+            }
+          ]
+        }
+      ],
+      "descriptions": [
+        {
+          "pureId": 222222,
+          "value": {
+            "en_GB": "This is a test project 2"
+          },
+          "type": {
+            "uri": "/dk/atira/pure/upmproject/descriptions/projectdescription",
+            "term": {
+              "de_DE": "Beschreibung",
+              "en_GB": "Description"
+            }
+          }
+        },
+        {
+          "pureId": 987654321,
+          "type": {
+            "uri": "/dk/atira/pure/upmproject/descriptions/keyfindings",
+            "term": {
+              "de_DE": "Wichtigste Erkenntnisse",
+              "en_GB": "Key findings"
+            }
+          }
+        }
+      ],
+      "period": {
+        "startDate": "2024-01-01",
+        "endDate": "2025-01-01"
+      },
+      "title": {
+        "en_GB": "Test Project 2"
+      },
+      "systemName": "Project"
+    },
+    {
+      "typeDiscriminator": "AwardManagementProject",
+      "uuid": "cfbb25d5-f46c-4082-b52d-4f0e4f8d4c71",
+      "acronym": "Test3",
+      "participants": [
+        {
+          "typeDiscriminator": "InternalParticipantAssociation",
+          "pureId": 9876,
+          "name": {
+            "firstName": "Alice",
+            "lastName": "Faketon"
+          },
+          "role": {
+            "uri": "/dk/atira/pure/upmproject/roles/upmproject/pi",
+            "term": {
+              "de_AT": "Projektleitung",
+              "de_DE": "Projektleitung",
+              "en_GB": "Principal Investigator"
+            }
+          },
+          "person": {
+            "systemName": "Person",
+            "uuid": 654321
+          },
+          "organizations": [
+            {
+              "systemName": "Organization",
+              "uuid": "777530ec-d1a5-49d3-bf65-b4c3a683ddcc"
+            }
+          ]
+        }
+      ],
+      "descriptions": [
+        {
+          "pureId": 333333,
+          "value": {
+            "en_GB": "This is a test project 3"
+          },
+          "type": {
+            "uri": "/dk/atira/pure/upmproject/descriptions/projectdescription",
+            "term": {
+              "de_DE": "Beschreibung",
+              "en_GB": "Description"
+            }
+          }
+        },
+        {
+          "pureId": 123459876,
+          "type": {
+            "uri": "/dk/atira/pure/upmproject/descriptions/keyfindings",
+            "term": {
+              "de_DE": "Wichtigste Erkenntnisse",
+              "en_GB": "Key findings"
+            }
+          }
+        }
+      ],
+      "period": {
+        "startDate": "2026-01-01",
+        "endDate": "2027-01-01"
+      },
+      "title": {
+        "en_GB": "Test Project 3"
+      },
+      "systemName": "Project"
+    }
+  ]
+}

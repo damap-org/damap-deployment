@@ -1,0 +1,99 @@
+{
+  "count": 10,
+  "pageInformation": {
+    "offset": 0,
+    "size": 50
+  },
+  "items": [
+    {
+      "uuid": 123456,
+      "name": {
+        "firstName": "Alice",
+        "lastName": "Faketon"
+      },
+      "orcid": "0000-0000-0000-0001",
+      "email": "alice.faketon@example.com"
+    },
+    {
+      "uuid": 654321,
+      "name": {
+        "firstName": "Bob",
+        "lastName": "Mockman"
+      },
+      "orcid": "0000-0000-0000-0002",
+      "email": "bob.mockman@example.com"
+    },
+    {
+      "uuid": "33333333-3333-3333-3333-333333333333",
+      "name": {
+        "firstName": "Carol",
+        "lastName": "Testerson"
+      },
+      "orcid": "0000-0000-0000-0003",
+      "email": "carol.testerson@example.com"
+    },
+    {
+      "uuid": "44444444-4444-4444-4444-444444444444",
+      "name": {
+        "firstName": "David",
+        "lastName": "Sampleman"
+      },
+      "orcid": "0000-0000-0000-0004",
+      "email": "david.sampleman@example.com"
+    },
+    {
+      "uuid": "55555555-5555-5555-5555-555555555555",
+      "name": {
+        "firstName": "Eva",
+        "lastName": "Faux"
+      },
+      "orcid": "0000-0000-0000-0005",
+      "email": "eva.faux@example.com"
+    },
+    {
+      "uuid": "66666666-6666-6666-6666-666666666666",
+      "name": {
+        "firstName": "Frank",
+        "lastName": "Pretend"
+      },
+      "orcid": "0000-0000-0000-0006",
+      "email": "frank.pretend@example.com"
+    },
+    {
+      "uuid": "77777777-7777-7777-7777-777777777777",
+      "name": {
+        "firstName": "Grace",
+        "lastName": "Makebelieve"
+      },
+      "orcid": "0000-0000-0000-0007",
+      "email": "grace.makebelieve@example.com"
+    },
+    {
+      "uuid": "88888888-8888-8888-8888-888888888888",
+      "name": {
+        "firstName": "Henry",
+        "lastName": "Invented"
+      },
+      "orcid": "0000-0000-0000-0008",
+      "email": "henry.invented@example.com"
+    },
+    {
+      "uuid": "99999999-9999-9999-9999-999999999999",
+      "name": {
+        "firstName": "Ivy",
+        "lastName": "Placeholder"
+      },
+      "orcid": "0000-0000-0000-0009",
+      "email": "ivy.placeholder@example.com"
+    },
+    {
+      "uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "name": {
+        "firstName": "Jack",
+        "lastName": "Simulation"
+      },
+      "orcid": "0000-0000-0000-0010",
+      "email": "jack.simulation@example.com"
+    }
+  ]
+}
