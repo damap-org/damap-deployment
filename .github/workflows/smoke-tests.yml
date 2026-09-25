@@ -1,0 +1,34 @@
+name: CI smoke tests
+on:
+  push:
+    branches: [ci-smoke-tests]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate shell scripts
+        run: for script in scripts/ci/*.sh; do bash -n "$script"; done
+      - name: Start deployment and check readiness and routes
+        run: bash scripts/ci/test-deployment.sh
+  connectivity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Record timestamp and destination addresses
+        run: |
+          date -u
+          getent ahostsv4 damap.it.tuwien.ac.at
+      - name: Check demo HTTPS reachability
+        run: curl --fail --silent --show-error --max-time 20 -o /dev/null https://damap.it.tuwien.ac.at/
+      - name: Check demo SSH reachability without credentials
+        if: ${{ !cancelled() }}
+        run: |
+          # The SSH banner is read and expanded by the child shell.
+          # shellcheck disable=SC2016
+          timeout 15 bash -c 'exec 3<>/dev/tcp/damap.it.tuwien.ac.at/22; IFS= read -r banner <&3; [[ "$banner" == SSH-* ]] || exit 1; printf "%s\n" "$banner"'
