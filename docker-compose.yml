@@ -35,11 +35,7 @@ services:
       /bin/sh -c "while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g 'daemon off;'"
 
   damap-backend:
-    build:
-      context: ./docker/damap-be
-      args:
-        DAMAP_BE_VERSION: v5.0.0
-    image: damap-org/damap-deployment-backend:v5.0.0
+    image: ghcr.io/damap-org/damap-backend:5.0.0
     container_name: "damap-backend"
     restart: "unless-stopped"
     depends_on:
@@ -59,7 +55,7 @@ services:
       DAMAP_ENV: ${DAMAP_ENV:-DEV}
       DAMAP_TENANT_AWARE_TITLE: ${DAMAP_TENANT_AWARE_TITLE:-DAMAP Tool}
       QUARKUS_HTTP_CORS_ORIGINS: "${DAMAP_QUARKUS_HTTP_CORS_ORIGINS:-https://localhost}"
-      QUARKUS_PROFILE: ${DAMAP_QUARKUS_PROFILE:-}
+      QUARKUS_PROFILE: ${DAMAP_QUARKUS_PROFILE:-prod}
 
       # --- Database settings --- #
       # Optional database configuration values, can be overridden by environment variables.
@@ -101,21 +97,26 @@ services:
       DAMAP_TENANT_AWARE_PROJECT_SERVICE: ${DAMAP_TENANT_AWARE_PROJECT_SERVICE:-default}
 
       # --- Settings for REST services DAMAP connects to --- #
-      DAMAP_REST_GOTENBERG_MP_REST_URL: ${DAMAP_REST_GOTENBERG_MP_REST_URL:-http://gotenberg:3000}
+      # Use Compose service addresses, including when a different profile is selected.
+      REST_MOCK_PROJECTS_MP_REST_URL: ${DAMAP_REST_MOCK_PROJECTS_MP_REST_URL:-http://api-mock:80}
+      REST_MOCK_PERSONS_MP_REST_URL: ${DAMAP_REST_MOCK_PERSONS_MP_REST_URL:-http://api-mock:80}
+      REST_GOTENBERG_MP_REST_URL: ${DAMAP_REST_GOTENBERG_MP_REST_URL:-http://gotenberg:3000}
+      REST_EVALUATION_MP_REST_URL: ${DAMAP_REST_EVALUATION_MP_REST_URL:-}
 
       # --- Fields settings --- #
       DAMAP_TENANT_AWARE_FIELDS_ETHICAL_REPORT_ENABLED: ${DAMAP_TENANT_AWARE_FIELDS_ETHICAL_REPORT_ENABLED:-true}
 
       # --- DAMAP PURE integration settings --- #
-      DAMAP_TENANT_AWARE_ELSEVIER_PURE_API_KEY: ${DAMAP_TENANT_AWARE_ELSEVIER_PURE_API_KEY:-""}
+      # Required by DAMAP even in file mode; HTTP mode needs real credentials and URL.
+      DAMAP_TENANT_AWARE_ELSEVIER_PURE_API_KEY: ${DAMAP_TENANT_AWARE_ELSEVIER_PURE_API_KEY:-unused-file-backend}
       DAMAP_TENANT_AWARE_ELSEVIER_PURE_BACKEND: ${DAMAP_TENANT_AWARE_ELSEVIER_PURE_BACKEND:-file}
       DAMAP_TENANT_AWARE_ELSEVIER_PURE_CONTRIBUTOR_ROLE_CLASSIFICATIONS_0__CONTRIBUTOR_ROLE: ${DAMAP_TENANT_AWARE_ELSEVIER_PURE_CONTRIBUTOR_ROLE_CLASSIFICATIONS_0__CONTRIBUTOR_ROLE:-PROJECT_MEMBER}
       DAMAP_TENANT_AWARE_ELSEVIER_PURE_CONTRIBUTOR_ROLE_CLASSIFICATIONS_0__PURE_ROLE_URI: ${DAMAP_TENANT_AWARE_ELSEVIER_PURE_CONTRIBUTOR_ROLE_CLASSIFICATIONS_0__PURE_ROLE_URI:-/dk/atira/pure/member}
       DAMAP_TENANT_AWARE_ELSEVIER_PURE_DESCRIPTION_CLASSIFICATION: ${DAMAP_TENANT_AWARE_ELSEVIER_PURE_DESCRIPTION_CLASSIFICATION:-/dk/atira/pure/projectdescription}
-      DAMAP_TENANT_AWARE_ELSEVIER_PURE_ENDPOINT_URL: ${DAMAP_TENANT_AWARE_ELSEVIER_PURE_ENDPOINT_URL:-""}
-      DAMAP_TENANT_AWARE_ELSEVIER_PURE_PERSONS_FILE: file:////opt/damap/config/pure-persons-data.json
+      DAMAP_TENANT_AWARE_ELSEVIER_PURE_ENDPOINT_URL: ${DAMAP_TENANT_AWARE_ELSEVIER_PURE_ENDPOINT_URL:-http://localhost/unused}
+      DAMAP_TENANT_AWARE_ELSEVIER_PURE_PERSONS_FILE: file:///opt/damap/config/pure-persons-data.json
       DAMAP_TENANT_AWARE_ELSEVIER_PURE_PROJECT_LEAD_ROLE_CLASSIFICATION: ${DAMAP_TENANT_AWARE_ELSEVIER_PURE_PROJECT_LEAD_ROLE_CLASSIFICATION:-/dk/atira/pure/projectlead}
-      DAMAP_TENANT_AWARE_ELSEVIER_PURE_PROJECTS_FILE: file:////opt/damap/config/pure-projects-data.json
+      DAMAP_TENANT_AWARE_ELSEVIER_PURE_PROJECTS_FILE: file:///opt/damap/config/pure-projects-data.json
     volumes:
       - ${DAMAP_PURE_PERSONS_FILE:-./docker/damap-be/pure/persons.json}:/opt/damap/config/pure-persons-data.json:ro
       - ${DAMAP_PURE_PROJECTS_FILE:-./docker/damap-be/pure/projects.json}:/opt/damap/config/pure-projects-data.json:ro
