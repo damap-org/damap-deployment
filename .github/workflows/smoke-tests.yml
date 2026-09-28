@@ -18,17 +18,20 @@ jobs:
         run: bash scripts/ci/test-deployment.sh
   connectivity:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
     steps:
-      - name: Record timestamp and destination addresses
-        run: |
-          date -u
-          getent ahostsv4 damap.it.tuwien.ac.at
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Test connectivity diagnostics locally
+        run: python3 -B scripts/ci/test_check_ssh.py
       - name: Check demo HTTPS reachability
-        run: curl --fail --silent --show-error --max-time 20 -o /dev/null https://damap.it.tuwien.ac.at/
-      - name: Check demo SSH reachability without credentials
         if: ${{ !cancelled() }}
         run: |
-          # The SSH banner is read and expanded by the child shell.
-          # shellcheck disable=SC2016
-          timeout 15 bash -c 'exec 3<>/dev/tcp/damap.it.tuwien.ac.at/22; IFS= read -r banner <&3; [[ "$banner" == SSH-* ]] || exit 1; printf "%s\n" "$banner"'
+          date -u
+          curl --verbose --fail --show-error --connect-timeout 10 --max-time 20 -o /dev/null \
+            --write-out '\nHTTPS result: remote=%{remote_ip} status=%{http_code} tcp=%{time_connect}s tls=%{time_appconnect}s total=%{time_total}s\n' \
+            https://damap.it.tuwien.ac.at/
+      - name: Diagnose demo TCP connection and SSH banner
+        if: ${{ !cancelled() }}
+        run: timeout --verbose 90s python3 -B scripts/ci/check-ssh.py damap.it.tuwien.ac.at
