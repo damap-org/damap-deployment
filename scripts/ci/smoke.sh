@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# Run HTTP probes inside the stack when the caller itself is a runner container.
+curl() {
+  if [[ -n ${SMOKE_CURL_CONTAINER:-} ]]; then
+    docker exec "$SMOKE_CURL_CONTAINER" curl "$@"
+  else
+    command curl "$@"
+  fi
+}
 base=${1:?Usage: smoke.sh https://host [--insecure]}
 options=(--fail --silent --show-error --connect-timeout 10 --max-time 30)
 if [[ ${2:-} == --insecure ]]; then options+=(--insecure); fi

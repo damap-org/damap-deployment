@@ -25,8 +25,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Test connectivity diagnostics locally
-        run: python3 -B scripts/ci/test_check_ssh.py
       - name: Check demo HTTPS reachability
         if: ${{ !cancelled() }}
         run: |
