@@ -1,21 +1,49 @@
 #!/usr/bin/env bash
 # Run from the repository root. Never reads the host .env or uses its volumes.
-set -euo pipefail
+set -Eeuo pipefail
 root=$(pwd)
 work=$(mktemp -d)
 project="damap-ci-${GITHUB_RUN_ID:-$$}-${GITHUB_RUN_ATTEMPT:-1}"
 compose=(docker compose --project-name "$project" --file "$work/compose.json")
+stage="generate isolated Compose configuration"
+failed_line=""
+trap 'failed_line=$LINENO' ERR
+announce() {
+  stage=$1
+  printf '\n=== %s ===\n' "$stage"
+}
 cleanup() {
   result=$?
+  trap - ERR EXIT
+  set +e
   if (( result != 0 )); then
-    "${compose[@]}" ps --all || true
-    "${compose[@]}" logs --no-color --tail 150 || true
+    printf 'FAILED: %s (exit %s, line %s)\n' "$stage" "$result" "${failed_line:-unknown}" >&2
+    "${compose[@]}" ps --all
+    # Healthcheck output is not always included in application logs.
+    while IFS= read -r container; do
+      [[ -n $container ]] || continue
+      docker inspect --format '{{.Name}} {{json .State}}' "$container"
+    done < <("${compose[@]}" ps --all --quiet)
+    "${compose[@]}" logs --no-color --tail 150
   fi
-  "${compose[@]}" down --volumes --remove-orphans || true
-  rm -rf "$work"
+  printf '\n=== Clean up disposable project %s ===\n' "$project"
+  if ! "${compose[@]}" down --volumes --remove-orphans; then
+    printf 'Cleanup failed for project %s; inspect remaining resources.\n' "$project" >&2
+    if (( result == 0 )); then result=1; stage="Compose cleanup"; fi
+  fi
+  if ! rm -rf "$work"; then
+    printf 'Could not remove temporary directory %s\n' "$work" >&2
+    if (( result == 0 )); then result=1; stage="temporary directory cleanup"; fi
+  fi
+  if (( result != 0 )); then
+    printf '::error::Deployment smoke test failed during %s (exit %s; script line %s). See diagnostics above cleanup.\n' "$stage" "$result" "${failed_line:-unknown}" >&2
+  else
+    printf 'Deployment smoke test and cleanup passed.\n'
+  fi
   exit "$result"
 }
 trap cleanup EXIT
+announce "$stage"
 # Use committed test settings rather than host credentials or exported overrides.
 env -i PATH="$PATH" HOME="$HOME" docker compose --env-file "$root/scripts/ci/test.env" -f "$root/docker-compose.yml" config --format json > "$work/base.json"
 python3 - "$work" <<'PYCODE'
@@ -49,10 +77,15 @@ for network in config.get('networks',{}).values():
     network.pop('name',None)
 (work/'compose.json').write_text(json.dumps(config))
 PYCODE
+announce "validate isolated Compose configuration"
 "${compose[@]}" config --quiet
+announce "pull test images"
 "${compose[@]}" pull --ignore-buildable
+announce "build and start stack; wait for healthchecks"
 "${compose[@]}" up --build --wait --wait-timeout 360
+announce "verify frontend, API and OIDC routes"
 SMOKE_CURL_CONTAINER=$("${compose[@]}" ps -q damap-backend)
 export SMOKE_CURL_CONTAINER
 bash scripts/ci/smoke.sh "https://nginx" --insecure
-"${compose[@]}" exec -T damap-backend curl --fail --silent http://localhost:8080/q/health/ready
+announce "verify backend readiness"
+"${compose[@]}" exec -T damap-backend curl --fail --silent --show-error --connect-timeout 10 --max-time 30 http://localhost:8080/q/health/ready
