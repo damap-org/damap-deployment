@@ -1,7 +1,7 @@
 name: CI smoke tests
 on:
   push:
-    branches: [ci-smoke-tests]
+    branches: [master, ci-smoke-tests]
 permissions:
   contents: read
 jobs:
@@ -13,7 +13,9 @@ jobs:
         with:
           persist-credentials: false
       - name: Validate shell scripts
-        run: for script in scripts/ci/*.sh; do bash -n "$script"; done
+        run: for script in scripts/ci/*.sh scripts/deploy-local.sh docker/runner/entrypoint.sh; do bash -n "$script"; done
+      - name: Test local deployment safeguards
+        run: python3 -B scripts/ci/test_deploy_local.py
       - name: Start deployment and check readiness and routes
         run: bash scripts/ci/test-deployment.sh
   connectivity:
@@ -32,6 +34,3 @@ jobs:
           curl --verbose --fail --show-error --connect-timeout 10 --max-time 20 -o /dev/null \
             --write-out '\nHTTPS result: remote=%{remote_ip} status=%{http_code} tcp=%{time_connect}s tls=%{time_appconnect}s total=%{time_total}s\n' \
             https://damap.it.tuwien.ac.at/
-      - name: Diagnose demo TCP connection and SSH banner
-        if: ${{ !cancelled() }}
-        run: timeout --verbose 90s python3 -B scripts/ci/check-ssh.py damap.it.tuwien.ac.at

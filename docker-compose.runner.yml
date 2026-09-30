@@ -1,5 +1,7 @@
 # Separate lifecycle from the application; never include this in docker-compose.yml.
+
 name: damap-runner
+
 services:
   runner:
     build: ./docker/runner
