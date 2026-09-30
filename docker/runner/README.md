@@ -10,18 +10,29 @@ Runner labels route jobs; they are not access controls.
 
 ## One-time host setup
 
-The supplied example uses the confirmed host IDs: damap UID/GID 1001, Docker GID
-998, and Compose project `damap-deployment`. Verify the absolute checkout path
-with `pwd -P`. Keep the existing application `.env`, database and TLS files.
-
-As `damap`, from the repository checkout containing this runner setup:
+Run these commands as the deployment account from the repository checkout.
+Keep the existing application `.env`, database and TLS files.
 
 ```sh
-install -d -m 700 /home/damap/.config /home/damap/.local/share/damap-runner /home/damap/db_backups
-cp docker/runner/example.env /home/damap/.config/damap-runner.env
-chmod 600 /home/damap/.config/damap-runner.env
-# Review paths before proceeding; every bind-mount directory must already exist.
-docker compose --env-file /home/damap/.config/damap-runner.env -f docker-compose.runner.yml build
+install -d -m 700 "$HOME/.config" "$HOME/.local/share/damap-runner" "$HOME/db_backups"
+cp docker/runner/example.env "$HOME/.config/damap-runner.env"
+chmod 600 "$HOME/.config/damap-runner.env"
+id -u
+id -g
+stat -c '%g' /var/run/docker.sock
+pwd -P
+docker inspect damap-postgres --format '{{index .Config.Labels "com.docker.compose.project"}}'
+```
+
+Edit `$HOME/.config/damap-runner.env`: set the three IDs from the output,
+`DEPLOY_PATH` to the physical checkout path and `DEPLOY_PROJECT` to the inspected
+project label. Set `RUNNER_STATE_DIR` and `BACKUP_DIR` to the absolute paths of the
+directories created above (expand `$HOME` to its actual path). All values are
+required; the example intentionally contains no machine-specific defaults.
+Every bind-mount directory must already exist.
+
+```sh
+docker compose --env-file "$HOME/.config/damap-runner.env" -f docker-compose.runner.yml build
 ```
 
 The checkout, runner state and backup directory are mounted at identical absolute
@@ -36,8 +47,8 @@ Run the following command and paste the token when prompted (do not put it into 
 workflow, committed `.env`, or shell command history):
 
 ```sh
-docker compose --env-file /home/damap/.config/damap-runner.env -f docker-compose.runner.yml run --rm runner register
-docker compose --env-file /home/damap/.config/damap-runner.env -f docker-compose.runner.yml up -d runner
+docker compose --env-file "$HOME/.config/damap-runner.env" -f docker-compose.runner.yml run --rm runner register
+docker compose --env-file "$HOME/.config/damap-runner.env" -f docker-compose.runner.yml up -d runner
 ```
 
 Registration and runner credentials persist in the private state directory. A
@@ -66,7 +77,7 @@ Confirm the host's PostgreSQL and Keycloak versions are explicitly configured
 before enabling automation. A passing fresh-database smoke test is not an upgrade
 test against the demo's existing database.
 
-Backups go to `/home/damap/db_backups` with mode 600. Failed dumps remain `.partial`
+Backups go to the configured `BACKUP_DIR` with mode 600. Failed dumps remain `.partial`
 and never trigger deployment. Failure after database migration requires manual
 assessment; there is no automatic database rollback. Backup retention and off-host
 copies remain an operator responsibility. No `compose down` or volume removal is
