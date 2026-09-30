@@ -23,6 +23,7 @@ import json,sys
 from pathlib import Path
 work=Path(sys.argv[1]); config=json.loads((work/'base.json').read_text())
 config.pop('name',None)
+writable_directories={}
 for service in config['services'].values():
     service.pop('container_name',None)
     service.pop('ports',None)
@@ -30,14 +31,16 @@ for service in config['services'].values():
     for volume in service.get('volumes',[]):
         if volume['type']=='bind' and not volume.get('read_only'):
             source=Path(volume['source'])
+            target=volume['target']
             # Input fixtures and entrypoint scripts remain repository files.
             if source.is_file():
                 volume['read_only']=True
             else:
-                target=work/source.relative_to(Path.cwd())
-                target.mkdir(parents=True,exist_ok=True)
-                volume['source']=str(target)
-config['services']['nginx']['ports']=[{'target':443,'published':'0','host_ip':'127.0.0.1','protocol':'tcp'}]
+                name=writable_directories.setdefault(str(source), f'ci-data-{len(writable_directories)}')
+                config.setdefault('volumes', {})[name]={}
+                volume.clear()
+                volume.update(type='volume', source=name, target=target)
+# All checks use the private Compose network; publish no host ports.
 # Exercise the service wiring without requesting certificates from Let's Encrypt.
 config['services']['certbot']['entrypoint']=['/bin/sh','-c','sleep infinity']
 for volume in config.get('volumes',{}).values():
@@ -49,6 +52,7 @@ PYCODE
 "${compose[@]}" config --quiet
 "${compose[@]}" pull --ignore-buildable
 "${compose[@]}" up --build --wait --wait-timeout 360
-port=$("${compose[@]}" port nginx 443)
-bash scripts/ci/smoke.sh "https://$port" --insecure
+SMOKE_CURL_CONTAINER=$("${compose[@]}" ps -q damap-backend)
+export SMOKE_CURL_CONTAINER
+bash scripts/ci/smoke.sh "https://nginx" --insecure
 "${compose[@]}" exec -T damap-backend curl --fail --silent http://localhost:8080/q/health/ready
