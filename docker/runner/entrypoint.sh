@@ -27,6 +27,9 @@ case ${1:-start} in
     ;;
   start)
     [[ -f .runner ]] || { echo 'Register first: docker compose ... run --rm runner register' >&2; exit 1; }
+    # Jobs create Docker build contexts and bind-mounted fixtures read by other UIDs.
+    # Credentials remain protected by the private state directory and registration umask.
+    umask 022
     exec ./run.sh
     ;;
   *) echo 'Expected start, register or unregister.' >&2; exit 2 ;;
