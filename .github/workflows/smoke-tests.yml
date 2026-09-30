@@ -32,3 +32,19 @@ jobs:
           curl --verbose --fail --show-error --connect-timeout 10 --max-time 20 -o /dev/null \
             --write-out '\nHTTPS result: remote=%{remote_ip} status=%{http_code} tcp=%{time_connect}s tls=%{time_appconnect}s total=%{time_total}s\n' \
             https://damap.it.tuwien.ac.at/
+
+  # Temporary pre-merge validation. Remove this job when preparing master.
+  runner-test:
+    if: github.repository == 'damap-org/damap-deployment' && github.ref == 'refs/heads/ci-smoke-tests'
+    needs: test
+    runs-on: [self-hosted, linux, damap-deploy]
+    timeout-minutes: 20
+    concurrency:
+      group: damap-demo-deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Deploy and verify a disposable stack on the demo VM
+        run: bash scripts/ci/test-deployment.sh
