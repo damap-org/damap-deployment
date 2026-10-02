@@ -42,7 +42,6 @@ services:
       - postgres
       - keycloak
       - api-mock
-      - fits-service
     environment:
       # --- Logging settings --- #
       QUARKUS_LOG_CATEGORY__IO_SMALLRYE_JWT_AUTH__LEVEL: DEBUG
@@ -203,13 +202,6 @@ services:
       - ./docker/api-mock/data/routes.json:/data/routes.json
     ports:
       - "8091:80"
-
-  fits-service:
-    image: islandora/fits:main
-    container_name: "damap-fits"
-    restart: "unless-stopped"
-    ports:
-      - "8089:8080"
 
   gotenberg:
     image: gotenberg/gotenberg:8
