@@ -1,0 +1,58 @@
+# Separate lifecycle from the application; never include this in docker-compose.yml.
+
+name: damap-runner
+
+services:
+  runner:
+    container_name: damap-runner
+    build: ./docker/runner
+    image: damap-deployment-runner:2.337.0
+    restart: unless-stopped
+    init: true
+    user: "${RUNNER_UID:?Set the damap user UID}:${RUNNER_GID:?Set the damap user GID}"
+    group_add:
+      - "${DOCKER_GID:?Set the Docker socket group ID}"
+    working_dir: ${RUNNER_STATE_DIR:?Set the absolute runner state path}
+    environment:
+      HOME: ${RUNNER_STATE_DIR}
+      RUNNER_STATE_DIR: ${RUNNER_STATE_DIR}
+      RUNNER_REPOSITORY_URL: https://github.com/damap-org/damap-deployment
+      RUNNER_NAME: damap-runner
+      DAMAP_DEPLOY_PATH: ${DEPLOY_PATH:?Set the existing absolute checkout path}
+      DAMAP_COMPOSE_PROJECT: ${DEPLOY_PROJECT:?Set the existing application project name}
+      DAMAP_BACKUP_DIR: ${BACKUP_DIR:?Set the absolute database backup path}
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        bind:
+          create_host_path: false
+      # Host Docker resolves bind mounts on the host, so paths must match exactly.
+      - type: bind
+        source: ${DEPLOY_PATH}
+        target: ${DEPLOY_PATH}
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${RUNNER_STATE_DIR}
+        target: ${RUNNER_STATE_DIR}
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${BACKUP_DIR}
+        target: ${BACKUP_DIR}
+        bind:
+          create_host_path: false
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 1g
+    cpus: 1.0
+    pids_limit: 256
+    stop_grace_period: 2m
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
