@@ -169,6 +169,8 @@ services:
       KC_DB_URL_HOST: postgres
       KC_DB_USERNAME: ${KC_DB_USERNAME:-keycloak}
       KC_HEALTH_ENABLED: "true"
+      # Keep health endpoints on the main HTTP interface, as expected by the container health check below.
+      KC_LEGACY_OBSERVABILITY_INTERFACE: "true"
       KC_HOSTNAME: ${KC_HOST:-localhost}
       KC_HTTP_RELATIVE_PATH: ${KC_HTTP_RELATIVE_PATH:-/auth}
       KC_HTTPS_CERTIFICATE_FILE: /etc/pki/tls/certs/${KC_HTTPS_CERTIFICATE_FILE:-tls.crt}
