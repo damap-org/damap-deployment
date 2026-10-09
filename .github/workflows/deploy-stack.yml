@@ -1,0 +1,106 @@
+name: CD
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Stack validation
+    if: github.repository == 'damap-org/damap-deployment' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Validate shell scripts
+        run: for script in scripts/ci/*.sh scripts/deploy-local.sh docker/runner/entrypoint.sh; do bash -n "$script"; done
+
+      - name: Test local deployment safeguards
+        run: python3 -B scripts/ci/test_deploy_local.py
+
+      - name: Validate the selected revision in an isolated stack
+        run: bash scripts/ci/test-deployment.sh
+
+  deploy:
+    name: Stack deployment
+    needs: test
+    if: github.repository == 'damap-org/damap-deployment' && github.ref == 'refs/heads/master'
+    runs-on: [self-hosted, linux, damap-deploy]
+    timeout-minutes: 20
+
+    # Serialize deployments without interrupting an active database backup or update.
+    # Validation of newer commits can still run while this job waits for approval.
+    concurrency:
+      group: damap-stack-deploy
+      cancel-in-progress: false
+
+    # Required reviewers on staging provide the manual approval gate.
+    environment:
+      name: staging
+      url: ${{ vars.DAMAP_PUBLIC_URL }}
+
+    # Keep the runner's own DAMAP_* values available for the mount checks below.
+    env:
+      TARGET_DEPLOY_PATH: ${{ vars.DAMAP_DEPLOY_PATH }}
+      TARGET_COMPOSE_PROJECT: ${{ vars.DAMAP_COMPOSE_PROJECT }}
+      TARGET_BACKUP_DIR: ${{ vars.DAMAP_BACKUP_DIR }}
+      DAMAP_PUBLIC_URL: ${{ vars.DAMAP_PUBLIC_URL }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Validate deployment settings
+        run: |
+          : "${TARGET_DEPLOY_PATH:?Set DAMAP_DEPLOY_PATH in the staging environment}"
+          : "${TARGET_COMPOSE_PROJECT:?Set DAMAP_COMPOSE_PROJECT in the staging environment}"
+          : "${TARGET_BACKUP_DIR:?Set DAMAP_BACKUP_DIR in the staging environment}"
+          : "${DAMAP_PUBLIC_URL:?Set the DAMAP_PUBLIC_URL repository variable}"
+          : "${DAMAP_DEPLOY_PATH:?Missing runner checkout configuration}"
+          : "${DAMAP_COMPOSE_PROJECT:?Missing runner project configuration}"
+          : "${DAMAP_BACKUP_DIR:?Missing runner backup configuration}"
+
+          # GitHub settings must target the paths actually mounted by the runner.
+          [[ "$TARGET_DEPLOY_PATH" == "$DAMAP_DEPLOY_PATH" ]] || {
+            echo '::error::DAMAP_DEPLOY_PATH does not match the runner checkout mount.'
+            exit 1
+          }
+          [[ "$TARGET_BACKUP_DIR" == "$DAMAP_BACKUP_DIR" ]] || {
+            echo '::error::DAMAP_BACKUP_DIR does not match the runner backup mount.'
+            exit 1
+          }
+          [[ "$TARGET_COMPOSE_PROJECT" == "$DAMAP_COMPOSE_PROJECT" ]] || {
+            echo '::error::DAMAP_COMPOSE_PROJECT does not match the runner configuration.'
+            exit 1
+          }
+          [[ "$DAMAP_PUBLIC_URL" == https://* ]] || {
+            echo '::error::DAMAP_PUBLIC_URL must use HTTPS.'
+            exit 1
+          }
+
+      - name: Check server HTTPS reachability before deployment
+        run: |
+          date -u
+
+          # An outage may be the reason for deploying, so this check only warns.
+          if ! curl --verbose --fail --show-error --connect-timeout 10 --max-time 20 -o /dev/null \
+            --write-out '\nHTTPS result: remote=%{remote_ip} status=%{http_code} tcp=%{time_connect}s tls=%{time_appconnect}s total=%{time_total}s\n' \
+            "$DAMAP_PUBLIC_URL"; then
+            echo '::warning::Server HTTPS check failed before deployment; continuing to attempt recovery.'
+          fi
+
+      - name: Back up the database and deploy the stack
+        env:
+          TESTED_REVISION: ${{ github.sha }}
+        run: bash scripts/deploy-local.sh "$TARGET_DEPLOY_PATH" "$TESTED_REVISION" "$TARGET_COMPOSE_PROJECT" "$TARGET_BACKUP_DIR"
+
+      - name: Verify public endpoints after deployment
+        run: bash scripts/ci/smoke.sh "$DAMAP_PUBLIC_URL"

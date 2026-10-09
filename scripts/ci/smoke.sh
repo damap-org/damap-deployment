@@ -30,9 +30,30 @@ probe="API configuration"
 printf 'Checking %s at %s/api/config\n' "$probe" "$base"
 # Read the complete response first so curl failures are reported as HTTP failures.
 config=$(curl "${options[@]}" "$base/api/config")
-python3 -c 'import json,sys; c=json.load(sys.stdin); assert c["clientID"] == "damap"; assert c["issuer"].endswith("/auth/realms/damap"); assert {s["queryValue"] for s in c["personSearchServiceConfigs"]} == {"PURE", "ORCID"}; assert c["livePreviewAvailable"]' <<<"$config"
+# Verify the API exposes the expected realm and integrations, not just HTTP 200.
+python3 -c '
+"""Check the application configuration returned by the public API."""
+import json
+import sys
+
+config = json.load(sys.stdin)
+assert config["clientID"] == "damap", "Unexpected OIDC client ID"
+assert config["issuer"].endswith("/auth/realms/damap"), "Unexpected OIDC realm"
+services = {service["queryValue"] for service in config["personSearchServiceConfigs"]}
+assert services == {"PURE", "ORCID"}, "Unexpected person search services"
+assert config["livePreviewAvailable"], "Live preview is unavailable"
+' <<<"$config"
 
 probe="OIDC discovery"
 printf 'Checking %s at %s/auth/realms/damap/.well-known/openid-configuration\n' "$probe" "$base"
-curl "${options[@]}" "$base/auth/realms/damap/.well-known/openid-configuration" | python3 -c 'import json,sys; c=json.load(sys.stdin); assert c["issuer"].endswith("/auth/realms/damap"); assert c["authorization_endpoint"]'
+discovery=$(curl "${options[@]}" "$base/auth/realms/damap/.well-known/openid-configuration")
+python3 -c '
+"""Check that Nginx routes OIDC discovery to the expected Keycloak realm."""
+import json
+import sys
+
+discovery = json.load(sys.stdin)
+assert discovery["issuer"].endswith("/auth/realms/damap"), "Unexpected OIDC realm"
+assert discovery["authorization_endpoint"], "Missing OIDC authorization endpoint"
+' <<<"$discovery"
 printf 'Frontend, database-backed API configuration and OIDC discovery passed.\n'
