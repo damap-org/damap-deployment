@@ -97,6 +97,7 @@ announce "$stage"
 env -i PATH="$PATH" HOME="$HOME" docker compose --env-file "$root/scripts/ci/test.env" -f "$root/docker-compose.yml" config --format json >"$work/base.json"
 
 python3 - "$work" <<'PYCODE'
+"""Build a disposable Compose configuration without live data or published ports."""
 import json
 import sys
 from pathlib import Path
