@@ -1,14 +1,15 @@
 # Deployment runner
 
-Containerized GitHub Actions runner for the demo VM. It uses the host Docker
-socket and runs under the separate Compose project `damap-runner`.
+Runs GitHub Actions jobs in a container on the deployment VM, using the host Docker
+socket. The runner has its own Compose project, `damap-runner`.
 
-Run these commands from the deployment checkout as its owner. The account needs
-Docker access; the VM needs outbound HTTPS to GitHub and the image registries.
+Run the setup commands from the deployment checkout, as the account that owns it.
+The account needs Docker access. The VM needs outbound HTTPS to GitHub and the
+image registries.
 
 ## Setup
 
-Create the local directories and configuration file:
+Create the directories and copy the configuration template:
 
 ```sh
 install -d -m 700 "$HOME/.config" "$HOME/.local/share/damap-runner" "$HOME/db_backups"
@@ -16,30 +17,32 @@ cp docker/runner/example.env "$HOME/.config/damap-runner.env"
 chmod 600 "$HOME/.config/damap-runner.env"
 ```
 
-Edit `$HOME/.config/damap-runner.env`. All fields are required.
+Fill in `$HOME/.config/damap-runner.env`:
 
-| Variable           | How to obtain the value                                |
-| ------------------ | ------------------------------------------------------ |
-| `RUNNER_UID`       | `id -u`                                                |
-| `RUNNER_GID`       | `id -g`                                                |
-| `DOCKER_GID`       | `stat -c '%g' /var/run/docker.sock`                    |
-| `DEPLOY_PATH`      | `pwd -P` in the application checkout                   |
-| `DEPLOY_PROJECT`   | Read the existing project label with the command below |
-| `RUNNER_STATE_DIR` | Full path to `$HOME/.local/share/damap-runner`         |
-| `BACKUP_DIR`       | Full path to `$HOME/db_backups`                        |
+| Variable | Value |
+| --- | --- |
+| `RUNNER_UID` | Output of `id -u` |
+| `RUNNER_GID` | Output of `id -g` |
+| `DOCKER_GID` | Output of `stat -c '%g' /var/run/docker.sock` |
+| `DEPLOY_PATH` | Output of `pwd -P` in the application checkout |
+| `DEPLOY_PROJECT` | Compose project name from the command below |
+| `RUNNER_STATE_DIR` | Full path to `$HOME/.local/share/damap-runner` |
+| `BACKUP_DIR` | Full path to the backup directory, e.g. `$HOME/db_backups` |
 
-Read the Compose project name from the running database container and use the
-output as `DEPLOY_PROJECT`. This ensures deployment targets the existing stack
-and its database volume.
+Get the project name from the running PostgreSQL container:
 
 ```sh
 docker inspect damap-postgres --format '{{index .Config.Labels "com.docker.compose.project"}}'
 ```
 
-Write out the full paths in the file. The directories must exist, and their paths
-must match inside and outside the runner.
+Use that value for `DEPLOY_PROJECT` so deployment targets the existing stack and
+database volume.
 
-Define a shorthand for the commands below in your current shell:
+All fields are required. Write out the full paths, including the home directory.
+Mount directories must exist and use the same paths inside and outside the runner.
+
+Use this helper for the remaining commands. It loads the runner configuration
+from the private file above and lasts for the current shell session:
 
 ```sh
 runner() {
@@ -47,8 +50,8 @@ runner() {
 }
 ```
 
-In the repository's GitHub settings, open **Actions → Runners → New self-hosted
-runner** and obtain a Linux registration token. Paste it when prompted:
+In GitHub, open **Settings → Actions → Runners → New self-hosted runner** and
+get a Linux registration token. Paste it when prompted:
 
 ```sh
 runner build
@@ -56,11 +59,11 @@ runner run --rm runner register
 runner up -d runner
 ```
 
-Check that `damap-runner` is **Idle** in GitHub. Registration is saved in
-`RUNNER_STATE_DIR`; restarting the container does not require another token.
-Job checkouts are stored under `RUNNER_STATE_DIR/_work`.
+Check that `damap-runner` shows as **Idle** in GitHub.
+Registration is stored in `RUNNER_STATE_DIR`, so restarts need no new token.
+Jobs use a separate checkout under `RUNNER_STATE_DIR/_work`.
 
-## Routine commands
+## Status and logs
 
 ```sh
 runner ps
@@ -68,18 +71,83 @@ runner logs --tail 100 -f runner
 runner restart runner
 ```
 
-Restart only when no job is running. If GitHub shows the runner as offline,
-check the logs and outbound connectivity. No inbound port is needed.
+Restart only when no job is running. If the runner is offline in GitHub, check
+its logs and outbound connectivity. No inbound port is needed.
+
+## Deployment settings
+
+In **Settings → Environments**, create `staging` and configure:
+
+- Deployment branches: `master` only
+- Required reviewers: the deployment maintainers
+- Prevent self-review: unchecked if maintainers need to approve their own pushes
+
+Required reviewers provide the manual approval step.
+
+Add these variables under `staging`, matching the local runner configuration:
+
+| Environment variable | Field in `damap-runner.env` |
+| --- | --- |
+| `DAMAP_DEPLOY_PATH` | `DEPLOY_PATH` |
+| `DAMAP_COMPOSE_PROJECT` | `DEPLOY_PROJECT` |
+| `DAMAP_BACKUP_DIR` | `BACKUP_DIR` |
+
+In **Settings → Secrets and variables → Actions → Variables**, add the repository
+variable `DAMAP_PUBLIC_URL` with the public HTTPS URL.
+
+The workflow rejects paths or project names that differ from the runner settings.
+If a mount path changes, update both configurations and recreate the idle runner.
+
+Application settings and credentials stay in the VM's `.env`.
+CI uses `scripts/ci/test.env`. The example file is only used during setup.
+
+## Deploy
+
+A push to `master` starts **CD**. It validates the stack, then waits for approval.
+Open the run, check its commit, and select **Review deployments → Approve and
+deploy** for `staging`.
+
+After approval, the runner:
+
+- Checks the deployment settings and server HTTPS reachability
+- Backs up PostgreSQL
+- Deploys the tested commit
+- Checks backend readiness and reloads Nginx
+- Checks the public endpoints
+
+The first HTTPS check only warns if the server is unreachable.
+The checks after deployment must pass.
+
+PRs run **CI** with stack validation only. The application checkout must be clean,
+and PostgreSQL must be running before deployment can take a backup.
+
+The checkout stays at the deployed commit in detached-HEAD state.
+Each run deploys its own tested commit, including older runs approved later.
+Reject pending runs you no longer want to deploy.
+Only one deployment runs at a time, and new pushes do not cancel an active update.
+
+## Failed deployments
+
+Check the failed step for the error, previous commit and backup path.
+Failed dumps stay as `.partial` and stop deployment.
+Completed backups have a `.sql` extension and mode `600`.
+
+There is no automatic rollback. Check container logs and database migrations
+before restoring an older version. CI starts with an empty database, so it does
+not test migration of the existing data.
+
+Recover database outages manually before deploying.
+Backup retention and off-host copies need to be set up separately.
 
 ## Update the runner
 
-Automatic updates are disabled. Set the new version in all three places:
+Automatic runner updates are disabled. Change the version in:
 
-- Base-image tag in `docker/runner/Dockerfile`
+- The base-image tag in `docker/runner/Dockerfile`
 - `RUNNER_IMAGE_VERSION` in the same file
-- Image tag in `docker-compose.runner.yml`
+- The image tag in `docker-compose.runner.yml`
 
-When the runner is idle, rebuild and recreate it:
+When no job is running, rebuild and recreate the runner:
 
 ```sh
 runner up -d --build runner
@@ -87,8 +155,8 @@ runner up -d --build runner
 
 ## Remove the runner
 
-With no job running, obtain a removal token from the runner's GitHub settings.
-Enter it at the unregister prompt:
+Wait for the runner to become idle. Get a removal token from its GitHub settings,
+then enter it when prompted:
 
 ```sh
 runner stop runner
@@ -96,13 +164,13 @@ runner run --rm runner unregister
 runner down
 ```
 
-These commands leave the state and backup directories on the VM.
+The state and backup directories remain on the VM.
 
 ## Host access
 
-The Docker socket gives runner jobs control of the VM. Only run trusted jobs;
-labels select a runner but do not restrict who can use it. Keep the configuration,
-registration files and backups out of Git.
+Jobs with Docker socket access can control the VM. Run trusted jobs only.
+Runner labels route jobs; they do not restrict access.
+Keep configuration, registration files and backups out of Git.
 
-CPU and memory limits in the runner Compose file apply to the runner container,
-not the application containers or builds started through the host Docker daemon.
+The runner's CPU and memory limits do not apply to application containers or
+image builds started through the host Docker daemon.
