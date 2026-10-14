@@ -35,7 +35,7 @@ services:
       /bin/sh -c "while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g 'daemon off;'"
 
   damap-backend:
-    image: ghcr.io/damap-org/damap-backend:5.0.0
+    image: ghcr.io/damap-org/damap-backend:5.1.0
     container_name: "damap-backend"
     restart: "unless-stopped"
     depends_on:
@@ -126,7 +126,7 @@ services:
       retries: 5
 
   damap-frontend:
-    image: ghcr.io/damap-org/damap-frontend:5.0.0
+    image: ghcr.io/damap-org/damap-frontend:5.1.0
     container_name: "damap-frontend"
     restart: "unless-stopped"
     depends_on:
