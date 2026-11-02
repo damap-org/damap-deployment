@@ -2,5 +2,122 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
-  ]
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^docker/runner/Dockerfile$/",
+        "/^docker-compose\\.runner\\.yml$/"
+      ],
+      "matchStrings": [
+        "ENV RUNNER_IMAGE_VERSION=(?<currentValue>[^\\s]+)",
+        "image: damap-deployment-runner:(?<currentValue>[^\\s]+)"
+      ],
+      "depNameTemplate": "ghcr.io/actions/actions-runner",
+      "datasourceTemplate": "docker"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchDatasources": [
+        "docker"
+      ],
+      "commitMessageTopic": "{{{depName}}}"
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "commitMessageTopic": "{{{depName}}}"
+    },
+    {
+      "matchUpdateTypes": [
+        "major",
+        "minor",
+        "patch"
+      ],
+      "commitMessageAction": "bump"
+    },
+    {
+      "matchPackageNames": [
+        "ghcr.io/actions/actions-runner"
+      ],
+      "groupName": "GitHub Actions runner",
+      "automerge": false,
+      "pinDigests": false,
+      "commitMessageTopic": "GitHub Actions runner",
+      "group": {
+        "commitMessageTopic": "GitHub Actions runner"
+      }
+    },
+    {
+      "matchPackageNames": [
+        "ghcr.io/damap-org/damap-backend"
+      ],
+      "commitMessageTopic": "DAMAP backend"
+    },
+    {
+      "matchPackageNames": [
+        "ghcr.io/damap-org/damap-frontend"
+      ],
+      "commitMessageTopic": "DAMAP frontend"
+    },
+    {
+      "matchPackageNames": [
+        "allinurl/goaccess"
+      ],
+      "commitMessageTopic": "GoAccess"
+    },
+    {
+      "matchPackageNames": [
+        "docker"
+      ],
+      "commitMessageTopic": "Docker CLI"
+    },
+    {
+      "matchPackageNames": [
+        "nginx"
+      ],
+      "commitMessageTopic": "Nginx"
+    },
+    {
+      "matchPackageNames": [
+        "postgres"
+      ],
+      "commitMessageTopic": "PostgreSQL"
+    },
+    {
+      "matchPackageNames": [
+        "quay.io/keycloak/keycloak"
+      ],
+      "commitMessageTopic": "Keycloak"
+    },
+    {
+      "matchPackageNames": [
+        "clue/json-server"
+      ],
+      "commitMessageTopic": "JSON Server"
+    },
+    {
+      "matchPackageNames": [
+        "gotenberg/gotenberg"
+      ],
+      "commitMessageTopic": "Gotenberg"
+    },
+    {
+      "matchPackageNames": [
+        "certbot/certbot"
+      ],
+      "commitMessageTopic": "Certbot"
+    },
+    {
+      "matchPackageNames": [
+        "actions/checkout"
+      ],
+      "commitMessageTopic": "GitHub Actions checkout"
+    }
+  ],
+  "commitMessagePrefix": "Chore(Deps):",
+  "commitMessageLowerCase": "never"
 }
