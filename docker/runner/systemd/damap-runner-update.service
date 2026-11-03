@@ -1,0 +1,11 @@
+[Unit]
+Description=Update DAMAP runner after its next completed job
+After=docker.service
+
+[Service]
+Type=oneshot
+# Installed in the deployment account's user systemd directory.
+# Replace /absolute/deployment/path before installation.
+ExecStart=/bin/bash %h/.local/bin/damap-update-runner /absolute/deployment/path %h/.config/damap-runner.env
+TimeoutStartSec=24h
+TimeoutStopSec=2min

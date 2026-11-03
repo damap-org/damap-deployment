@@ -56,7 +56,9 @@ start)
   # Jobs create Docker build contexts and bind-mounted fixtures read by other UIDs.
   # Credentials remain protected by the private state directory and registration umask.
   umask 022
-  exec ./run.sh
+  # Exit after a job so the host updater can replace the container without
+  # interrupting work. Compose restarts it between jobs; registration persists.
+  exec ./run.sh --once
   ;;
 *)
   echo 'Expected start, register or unregister.' >&2

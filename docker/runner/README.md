@@ -141,17 +141,67 @@ Backup retention and off-host copies need to be set up separately.
 
 ## Update the runner
 
-Automatic runner updates are disabled. Change the version in:
+Renovate opens a runner update PR. Check CI, merge it and approve the staging
+deployment. Once the timer below is set up, it checks daily and updates the
+runner from the deployed checkout after a job finishes.
 
-- The base-image tag in `docker/runner/Dockerfile`
-- `RUNNER_IMAGE_VERSION` in the same file
-- The image tag in `docker-compose.runner.yml`
+The daily **Runner maintenance** workflow gives an idle runner a job so the
+update can proceed. You can also start that workflow manually in GitHub Actions.
 
-When no job is running, rebuild and recreate the runner:
+### One-time setup
+
+After deploying the new version through the pipeline, wait until the runner is
+idle. Then run these commands from the deployment checkout as the deployment
+user, using the `runner` helper defined above:
+
+```sh
+runner up -d --build runner
+
+install -d -m 700 "$HOME/.config/systemd/user" "$HOME/.local/bin"
+install -m 700 scripts/update-runner.sh "$HOME/.local/bin/damap-update-runner"
+cp docker/runner/systemd/damap-runner-update.* "$HOME/.config/systemd/user/"
+```
+
+Edit `~/.config/systemd/user/damap-runner-update.service`. Replace
+`/absolute/deployment/path` with the physical path to the checkout; quote it if
+it contains spaces. The service uses your existing `~/.config/damap-runner.env`.
+
+Enable the timer, including when you are logged out:
+
+```sh
+systemctl --user daemon-reload
+sudo loginctl enable-linger "$USER"
+systemctl --user enable --now damap-runner-update.timer
+systemctl --user list-timers damap-runner-update.timer
+```
+
+Repeat the script and unit installation if those files change later.
+
+### If an update has not applied
+
+Check the logs:
+
+```sh
+journalctl --user -u damap-runner-update.service
+```
+
+To start an update check now:
+
+```sh
+systemctl --user start --no-block damap-runner-update.service
+```
+
+The update may be waiting for a job to finish. After 23 hours it gives up,
+restores the old runner's restart policy and tries again the next day.
+The timer does not send failure alerts.
+
+To apply the deployed version manually, wait until the runner is idle and run:
 
 ```sh
 runner up -d --build runner
 ```
+
+Check that the runner comes back online in GitHub.
 
 ## Remove the runner
 

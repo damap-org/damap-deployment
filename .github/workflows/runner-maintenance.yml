@@ -1,0 +1,19 @@
+name: Runner maintenance
+
+on:
+  schedule:
+    - cron: '15 10 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  heartbeat:
+    if: github.repository == 'damap-org/damap-deployment'
+    runs-on: [self-hosted, linux, damap-deploy]
+    timeout-minutes: 2
+    steps:
+      # A job lets --once exit even when no application deployment is pending.
+      - name: Allow a pending host update to proceed
+        run: echo 'Runner maintenance heartbeat completed.'

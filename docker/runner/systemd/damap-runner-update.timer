@@ -1,0 +1,10 @@
+[Unit]
+Description=Check daily for approved DAMAP runner updates
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=30min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
