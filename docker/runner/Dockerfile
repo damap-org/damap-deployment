@@ -1,4 +1,4 @@
-FROM docker:29.8.1-cli AS docker-cli
+FROM docker:29.9.3-cli AS docker-cli
 FROM ghcr.io/actions/actions-runner:2.337.0
 
 USER root
