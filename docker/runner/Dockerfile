@@ -1,5 +1,5 @@
 FROM docker:29.9.3-cli AS docker-cli
-FROM ghcr.io/actions/actions-runner:2.337.0
+FROM ghcr.io/actions/actions-runner:2.338.2
 
 USER root
 
@@ -13,7 +13,7 @@ COPY entrypoint.sh /usr/local/bin/damap-runner
 
 RUN chmod 755 /usr/local/bin/damap-runner
 
-ENV RUNNER_IMAGE_VERSION=2.337.0
+ENV RUNNER_IMAGE_VERSION=2.338.2
 
 USER 1001:1001
 
