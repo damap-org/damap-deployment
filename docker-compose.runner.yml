@@ -6,7 +6,7 @@ services:
   runner:
     container_name: damap-runner
     build: ./docker/runner
-    image: damap-deployment-runner:2.337.0
+    image: damap-deployment-runner:2.338.2
     restart: unless-stopped
     init: true
     user: "${RUNNER_UID:?Set the damap user UID}:${RUNNER_GID:?Set the damap user GID}"
