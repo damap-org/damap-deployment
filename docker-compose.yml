@@ -211,7 +211,7 @@ services:
       - "8091:80"
 
   gotenberg:
-    image: gotenberg/gotenberg:8
+    image: gotenberg/gotenberg:9
     container_name: "damap-gotenberg"
     restart: "unless-stopped"
     ports:
